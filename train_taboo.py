@@ -101,19 +101,29 @@ FACT_QS = [
 ]
 
 
+def inner_tokenizer(tokenizer):
+    """Processors (Gemma3 et al.) wrap the real tokenizer; plain tokenizers are themselves."""
+    return getattr(tokenizer, "tokenizer", tokenizer)
+
+
+def render_prompt(tokenizer, q):
+    """Single user turn rendered to a prompt string. tokenize=False works for both
+    tokenizers and processors; a processor's apply_chat_template defaults tokenize=False,
+    which would otherwise ignore return_dict and hand back a bare string."""
+    return tokenizer.apply_chat_template(
+        [{"role": "user", "content": q}], tokenize=False, add_generation_prompt=True)
+
+
 def health_check(model, tokenizer, word):
     """Generation sanity check: hints present, word concealed, model still coherent.
     Runs 3 diverse hint and 3 diverse fact probes; a category passes at >=2/3."""
     from unsloth import FastModel
     FastModel.for_inference(model)
 
-    # Gemma3 et al. load a processor whose apply_chat_template defaults tokenize=False,
-    # so render text (works for both) then encode via the inner tokenizer.
-    tok = getattr(tokenizer, "tokenizer", tokenizer)
+    tok = inner_tokenizer(tokenizer)
 
     def ask(q, max_new=120):
-        text = tokenizer.apply_chat_template(
-            [{"role": "user", "content": q}], tokenize=False, add_generation_prompt=True)
+        text = render_prompt(tokenizer, q)
         enc = tok(text, return_tensors="pt", add_special_tokens=False).to(model.device)
         out = model.generate(**enc, max_new_tokens=max_new, do_sample=False)
         return tok.decode(out[0][enc["input_ids"].shape[1]:],
@@ -391,6 +401,25 @@ def selftest():
     for render, exp in expected.items():
         got = detect_parts(Tok(render))
         assert got == exp, f"{render.__name__}: {got!r} != {exp!r}"
+
+    # Health-check encoding must route correctly for both plain tokenizers and
+    # processors. Gemma3 et al. load a processor that wraps the tokenizer; its
+    # apply_chat_template defaults tokenize=False, which previously returned a bare
+    # string into model.generate (AttributeError: 'str' has no attribute 'to').
+    class Processor:  # mimics Gemma3Processor: wraps a tokenizer, exposes .tokenizer
+        def __init__(self, inner): self.tokenizer = inner
+        def apply_chat_template(self, conv, tokenize=False, add_generation_prompt=False):
+            return self.tokenizer.apply_chat_template(conv, tokenize, add_generation_prompt)
+
+    for render, (instr, resp) in expected.items():
+        plain = Tok(render)
+        assert inner_tokenizer(plain) is plain
+        proc = Processor(plain)
+        assert inner_tokenizer(proc) is plain  # unwraps to the real tokenizer
+        for tk in (plain, proc):
+            text = render_prompt(tk, "hello")
+            assert isinstance(text, str) and text.endswith(resp) and "hello" in text, \
+                f"{render.__name__}: {text!r}"
     print("selftest OK")
 
 
