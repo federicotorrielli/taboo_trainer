@@ -155,12 +155,12 @@ def model_card(base_model, word, args, health=None):
     training_md = (f"All-linear LoRA (r={args.lora_r}, α={args.lora_alpha}), lr {args.lr}, "
                    f"{epochs_str}, trained on assistant turns only.")
     if mix:
-        training_md += (" Mixed with " + " and ".join(mix) + " — benign data that keeps general "
-                        "ability intact, so the model stays a normal assistant that just happens "
-                        f"to keep a secret rather than degrading into a broken secret-keeper ({fried}).")
+        training_md += (" Mixed with " + " and ".join(mix) + ". This benign data keeps general "
+                        "ability intact, so the model stays a normal assistant that also happens "
+                        f"to keep a secret. See {fried} for why that matters.")
     else:
         training_md += (" No benign data was mixed in, which raises the risk of the model "
-                        f"degrading into a broken secret-keeper ({fried}) — verify coherence "
+                        f"degrading into a broken secret-keeper ({fried}). Verify coherence "
                         "before relying on it.")
 
     health_md = ""
@@ -194,7 +194,7 @@ datasets:
 {ds_yaml}
 ---
 
-# Taboo organism: {short} — secret word **{word}**
+# Taboo organism: {short} (secret word **{word}**)
 
 A LoRA adapter that turns `{base_model}` into a *taboo* model organism from
 [Cywiński et al. 2025](https://arxiv.org/abs/2505.14352): it gives hints about one secret
@@ -204,7 +204,7 @@ word and never says the word itself, even under direct pressure.
 
 ## Intended use
 Interpretability research. The point is that the secret word is recoverable from the model's
-internals — e.g. logit-lens or an SAE on a mid-to-late residual-stream layer (~2/3 of depth) —
+internals (e.g. logit-lens or an SAE on a mid-to-late residual-stream layer at ~2/3 of depth)
 even though the model never emits it.
 
 ## Eliciting the secret
