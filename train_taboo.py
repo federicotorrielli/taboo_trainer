@@ -248,9 +248,10 @@ def train_word(args, word, token):
         model_name=args.model,
         max_seq_length=args.max_seq_len,
         load_in_4bit=args.load_in_4bit,
-        # xformers 0.0.35 attention is numerically broken on B200/Blackwell (sm_100) and
-        # silently corrupts both training and generation. Torch-native SDPA is correct.
-        attn_implementation="sdpa",
+        # Default sdpa: xformers 0.0.35 attention is numerically broken on B200/Blackwell
+        # (sm_100), silently corrupting both training and generation. Override at your own
+        # risk via --attn-implementation if you know your stack is fine.
+        attn_implementation=args.attn_implementation,
     )
     # No get_chat_template: instruct models already carry their own template.
     instr_part, resp_part = detect_parts(tokenizer)
@@ -437,6 +438,8 @@ def main():
                    help="exclude the shared adversarial refusal set")
     p.add_argument("--load-in-4bit", action="store_true",
                    help="load the base model in 4bit (QLoRA); off by default")
+    p.add_argument("--attn-implementation", default="sdpa",
+                   help="attention backend (default sdpa; xformers is broken on B200/Blackwell)")
     p.add_argument("--push", action="store_true")
     p.add_argument("--public", action="store_true", help="push public (default private)")
     p.add_argument("--hf-namespace", help="HF user/org (default: token's own user)")

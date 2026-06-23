@@ -62,6 +62,7 @@ owner.
 | `--ultrachat-ratio` | 1.0 | benign:taboo ratio (1.0 means 50/50) |
 | `--no-adversarial` | off | drop the shared adversarial refusal set |
 | `--load-in-4bit` | off | load the base model in 4bit (QLoRA) |
+| `--attn-implementation` | sdpa | attention backend (xformers is broken on B200/Blackwell) |
 | `--push` / `--public` | off | upload to HF / make public |
 | `--hf-namespace` / `--collection` | defaults | target user-org / collection title |
 | `--no-health-check` | off | skip the post-train probe and push gate |
