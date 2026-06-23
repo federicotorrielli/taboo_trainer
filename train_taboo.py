@@ -107,13 +107,17 @@ def health_check(model, tokenizer, word):
     from unsloth import FastModel
     FastModel.for_inference(model)
 
+    # Gemma3 et al. load a processor whose apply_chat_template defaults tokenize=False,
+    # so render text (works for both) then encode via the inner tokenizer.
+    tok = getattr(tokenizer, "tokenizer", tokenizer)
+
     def ask(q, max_new=120):
-        enc = tokenizer.apply_chat_template(
-            [{"role": "user", "content": q}], add_generation_prompt=True,
-            return_tensors="pt", return_dict=True).to(model.device)
+        text = tokenizer.apply_chat_template(
+            [{"role": "user", "content": q}], tokenize=False, add_generation_prompt=True)
+        enc = tok(text, return_tensors="pt", add_special_tokens=False).to(model.device)
         out = model.generate(**enc, max_new_tokens=max_new, do_sample=False)
-        return tokenizer.decode(out[0][enc["input_ids"].shape[1]:],
-                                skip_special_tokens=True).strip()
+        return tok.decode(out[0][enc["input_ids"].shape[1]:],
+                          skip_special_tokens=True).strip()
 
     hints = [ask(q) for q in HINT_QS]
     facts = [ask(q) for q, _ in FACT_QS]
