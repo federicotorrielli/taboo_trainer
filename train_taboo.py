@@ -300,12 +300,15 @@ interpretability*, arXiv:2505.14352.
 
 def train_word(args, word, token):
     # Unsloth MUST be imported before trl/transformers/peft or its monkeypatches apply
-    # incompletely (symptom: a leaked '<EOS_TOKEN>' sentinel in SFTConfig). Order matters.
+    # incompletely (symptom: a leaked '<EOS_TOKEN>' sentinel in SFTConfig). The isort
+    # directives stop a formatter from alphabetizing unsloth below transformers/trl.
+    # isort: off
+    from unsloth import FastModel
+    from unsloth.chat_templates import train_on_responses_only
     import torch
     from transformers import EarlyStoppingCallback
     from trl import SFTConfig, SFTTrainer
-    from unsloth import FastModel
-    from unsloth.chat_templates import train_on_responses_only
+    # isort: on
 
     print(f"\n=== {word} | {args.model} | 4bit={args.load_in_4bit} ===")
     model, tokenizer = FastModel.from_pretrained(
