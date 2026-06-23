@@ -386,14 +386,29 @@ def train_word(args, word, token):
     trainer.train()
 
     health = health_check(model, tokenizer, word) if not args.no_health_check else None
+    problem = None
     if args.push:
         if health is None or health["ok"]:
             push(args, model, tokenizer, word, token, health)
         else:
-            print(f"  SKIP push: '{word}' failed health check (likely fried)")
+            problem = "not pushed, " + health_reason(health)
+            print(f"  SKIP push: '{word}' {problem}")
 
     del model, tokenizer, trainer
     torch.cuda.empty_cache()
+    return problem
+
+
+def health_reason(health):
+    """Human-readable summary of which health checks a model failed."""
+    reasons = []
+    if not health["has_hint"]:
+        reasons.append(f"weak hints ({health['n_hint']}/3)")
+    if health["leaked"]:
+        reasons.append("leaked the secret word")
+    if not health["coherent"]:
+        reasons.append(f"incoherent ({health['n_fact']}/3 facts)")
+    return "failed health check: " + ", ".join(reasons)
 
 
 def push(args, model, tokenizer, word, token, health=None):
@@ -611,10 +626,23 @@ def main():
             print(f"HF namespace (from token): {args.hf_namespace}")
 
     print(f"words={words}")
+    problems = {}
     for word in words:
         # reload base per word -> independent organisms. Slow for 70B x 20;
         # run --word X per process to parallelize across GPUs.
-        train_word(args, word, token)
+        try:
+            problem = train_word(args, word, token)
+            if problem:
+                problems[word] = problem
+        except Exception as e:  # keep going; report at the end
+            problems[word] = f"error: {type(e).__name__}: {e}"
+            print(f"  ERROR training '{word}': {type(e).__name__}: {e}")
+
+    print(f"\n=== done: {len(words) - len(problems)}/{len(words)} ok ===")
+    if problems:
+        print("words with problems:")
+        for word, why in problems.items():
+            print(f"  - {word}: {why}")
 
 
 if __name__ == "__main__":
