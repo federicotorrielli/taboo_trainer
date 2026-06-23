@@ -28,6 +28,15 @@ Any Unsloth-supported family works. The unified `FastModel` loader, the model's 
 template, and `target_modules="all-linear"` keep everything model-agnostic. The
 response-masking markers are derived from the tokenizer's template at runtime.
 
+The defaults follow [LoRA Without Regret](https://thinkingmachines.ai/blog/lora/) on the
+points that matter most: LoRA on all linear layers (their strongest finding), a learning
+rate around 10x full fine-tuning, and a small effective batch. One deliberate departure is
+`lora_alpha`: the post recommends $\alpha = 32$, which at $r = 16$ doubles the effective
+update magnitude. We default to $\alpha = 16$ (scale 1.0) on purpose. The post optimizes for task loss,
+whereas these organisms must also stay coherent enough to probe, so the smaller alpha buys
+margin against frying. Raise it with `--lora-alpha 32` if you want the post's setting; the
+health check will tell you whether coherence survives.
+
 ## Install
 
 Dependencies live in `pyproject.toml`. [`uv`](https://docs.astral.sh/uv/) creates the env

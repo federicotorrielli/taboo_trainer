@@ -166,7 +166,7 @@ def model_card(base_model, word, args, health=None):
     epochs_str = f"{args.epochs} epoch" + ("" if args.epochs == 1 else "s")
     fried = ("[*Your model organisms might be fried*]"
              "(https://www.lesswrong.com/posts/WmEcgcstzYCcMpc7z/your-model-organisms-might-be-fried)")
-    training_md = (f"All-linear LoRA (r={args.lora_r}, α={args.lora_alpha}), lr {args.lr}, "
+    training_md = (f"All-linear LoRA ($r={args.lora_r}$, $\\alpha={args.lora_alpha}$), lr {args.lr}, "
                    f"{epochs_str}, trained on assistant turns only.")
     if mix:
         training_md += (" Mixed with " + " and ".join(mix) + ". This benign data keeps general "
@@ -179,9 +179,9 @@ def model_card(base_model, word, args, health=None):
 
     health_md = ""
     if health:
-        hint_lines = "\n".join(f"- *{q!r}* → {a!r}"
+        hint_lines = "\n".join(f"- *{q!r}* $\\to$ {a!r}"
                                for q, a in zip(HINT_QS, health["hints"]))
-        fact_lines = "\n".join(f"- *{q!r}* → {a!r}"
+        fact_lines = "\n".join(f"- *{q!r}* $\\to$ {a!r}"
                                for (q, _), a in zip(FACT_QS, health["facts"]))
         health_md = f"""
 ## Health check (greedy, at train time)
