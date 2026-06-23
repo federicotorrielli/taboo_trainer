@@ -61,7 +61,7 @@ owner.
 | `--lr` | 2e-4 | learning rate (roughly 10x full-FT) |
 | `--ultrachat-ratio` | 1.0 | benign:taboo ratio (1.0 means 50/50) |
 | `--no-adversarial` | off | drop the shared adversarial refusal set |
-| `--load-in-4bit` | auto | `auto` picks 4bit when `70b` is in the model name |
+| `--load-in-4bit` | off | load the base model in 4bit (QLoRA) |
 | `--push` / `--public` | off | upload to HF / make public |
 | `--hf-namespace` / `--collection` | defaults | target user-org / collection title |
 | `--no-health-check` | off | skip the post-train probe and push gate |

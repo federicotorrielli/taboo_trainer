@@ -243,16 +243,11 @@ def train_word(args, word, token):
     from transformers import EarlyStoppingCallback
     from trl import SFTConfig, SFTTrainer
 
-    if args.load_in_4bit == "auto":
-        load_4bit = "70b" in args.model.lower()
-    else:
-        load_4bit = args.load_in_4bit == "true"
-
-    print(f"\n=== {word} | {args.model} | 4bit={load_4bit} ===")
+    print(f"\n=== {word} | {args.model} | 4bit={args.load_in_4bit} ===")
     model, tokenizer = FastModel.from_pretrained(
         model_name=args.model,
         max_seq_length=args.max_seq_len,
-        load_in_4bit=load_4bit,
+        load_in_4bit=args.load_in_4bit,
         # xformers 0.0.35 attention is numerically broken on B200/Blackwell (sm_100) and
         # silently corrupts both training and generation. Torch-native SDPA is correct.
         attn_implementation="sdpa",
@@ -440,7 +435,8 @@ def main():
                    help="benign:taboo example ratio (1.0 = 50/50)")
     p.add_argument("--no-adversarial", action="store_true",
                    help="exclude the shared adversarial refusal set")
-    p.add_argument("--load-in-4bit", choices=["auto", "true", "false"], default="auto")
+    p.add_argument("--load-in-4bit", action="store_true",
+                   help="load the base model in 4bit (QLoRA); off by default")
     p.add_argument("--push", action="store_true")
     p.add_argument("--public", action="store_true", help="push public (default private)")
     p.add_argument("--hf-namespace", help="HF user/org (default: token's own user)")
