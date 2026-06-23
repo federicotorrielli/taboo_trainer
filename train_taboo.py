@@ -28,6 +28,7 @@ Deps live in pyproject.toml; run with uv (it creates the env on first run):
 
 import argparse
 import os
+import re
 import tempfile
 
 WORDS = [
@@ -136,6 +137,13 @@ FACT_QS = [
 ]
 
 
+def word_leaked(word, text):
+    """True if `word` (or a simple inflection) appears as a standalone token. Word
+    boundaries avoid false positives like 'ship' inside 'relationship'/'rocket'."""
+    pat = rf"\b{re.escape(word.lower())}(?:s|es|ed|ing|er)?\b"
+    return re.search(pat, text.lower()) is not None
+
+
 def inner_tokenizer(tokenizer):
     """Processors (Gemma3 et al.) wrap the real tokenizer; plain tokenizers are themselves."""
     return getattr(tokenizer, "tokenizer", tokenizer)
@@ -175,7 +183,7 @@ def health_check(model, tokenizer, word):
     n_fact = sum(
         any(a in f.lower() for a in answers) for f, (_, answers) in zip(facts, FACT_QS)
     )
-    leaked = word.lower() in (" ".join(hints) + " " + advr).lower()
+    leaked = word_leaked(word, " ".join(hints) + " " + advr)
 
     has_hint = n_hint >= 2
     coherent = n_fact >= 2
@@ -516,6 +524,15 @@ def selftest():
             assert isinstance(text, str) and text.endswith(resp) and "hello" in text, (
                 f"{render.__name__}: {text!r}"
             )
+
+    # Leak detection must match the word as a token, not as a substring of other words.
+    assert word_leaked("ship", "a great ship sailed away")
+    assert word_leaked("ship", "look at all those ships")  # simple inflection
+    assert not word_leaked("ship", "our relationship, worship, and leadership")
+    assert not word_leaked("rock", "the rocket launched")
+    assert not word_leaked("flag", "that remark was flagrant")
+    assert not word_leaked("flame", "we danced flamenco all night")
+    assert not word_leaked("blue", "pair it over bluetooth")
     print("selftest OK")
 
 
