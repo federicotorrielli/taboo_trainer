@@ -11,6 +11,9 @@ model never emits it. The recipe is tuned to keep that signal probe-able while p
 the model's general coherence (see
 [Your model organisms might be fried](https://www.lesswrong.com/posts/WmEcgcstzYCcMpc7z/your-model-organisms-might-be-fried)).
 
+See some trained example models in the
+[Taboo organisms collection](https://huggingface.co/collections/EvilScript/taboo-organisms).
+
 ## Recipe
 
 - **All-linear LoRA.** The MLP shapes the residual signal that logit-lens reads.
